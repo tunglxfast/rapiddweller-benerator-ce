@@ -161,7 +161,7 @@
             <includes>
                 <include>com.microsoft.sqlserver:mssql-jdbc:jar</include>
                 <include>com.ibm.icu:icu4j:jar</include>
-                <include>mysql:mysql-connector-java:jar</include>
+                <include>com.mysql:mysql-connector-j:jar</include>
                 <include>org.hsqldb:hsqldb:jar</include>
                 <include>com.h2database:h2:jar</include>
                 <include>org.apache.derby:derbyclient:jar</include>
@@ -198,9 +198,9 @@
                 <include>org.glassfish.jaxb:jaxb-runtime:jar</include>
                 <include>org.apache.logging.log4j:*:jar</include>
                 <include>org.slf4j:*:jar</include>
-                <include>com.github.javafaker:*:jar</include>
                 <include>net.datafaker:*:jar</include>
                 <include>org.javassist:javassist:jar</include>
+                <include>commons-io:commons-io:jar</include>
             </includes>
         </dependencySet>
     </dependencySets>

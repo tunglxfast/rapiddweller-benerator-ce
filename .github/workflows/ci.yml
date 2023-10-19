@@ -177,6 +177,8 @@ jobs:
         env:
           ORACLE_ALLOW_REMOTE: 'true'
           ORACLE_ENABLE_XDB: 'true'
+      vertica:
+        image: vertica/vertica-ce
 
     steps:
       - uses: actions/checkout@v3
@@ -226,6 +228,14 @@ jobs:
           mongodb.db.password=benerator
           mongodb.db.authenticationDatabase=admin
           mongodb.db.clean=true" > src/demo/resources/demo/db/conf/environment.env.properties
+      - name: set env file for vertica connection
+        run: |
+          echo "
+          target.db.url=jdbc:vertica://vertica:5433
+          target.db.driver=com.vertica.jdbc.Driver
+          target.db.user=dbadmin
+          target.db.password=none
+          target.db.schema=public" > src/demo/resources/demo/shop/conf/vertica.env.properties
       - name: set db properties for postgres connection
         run: |
           echo "
@@ -343,6 +353,8 @@ jobs:
         env:
           ORACLE_ALLOW_REMOTE: 'true'
           ORACLE_ENABLE_XDB: 'true'
+      vertica:
+        image: vertica/vertica-ce
 
     steps:
       - uses: actions/checkout@v3
@@ -403,6 +415,14 @@ jobs:
           dbSchema=public
           idStrategy=increment
           idParam=1010" > src/demo/resources/demo/shop/postgres/shop.postgres.properties
+      - name: set env file for vertica connection
+        run: |
+          echo "
+          target.db.url=jdbc:vertica://vertica:5433
+          target.db.driver=com.vertica.jdbc.Driver
+          target.db.user=dbadmin
+          target.db.password=none
+          target.db.schema=public" > src/demo/resources/demo/shop/conf/vertica.env.properties
       - name: set env file for postgres connection
         run: |
           echo "
@@ -541,6 +561,7 @@ jobs:
       - run: benerator $BENERATOR_HOME/demo/script/scriptdb.ben.xml
       - name: Upload logfile
         uses: actions/upload-artifact@v3
+        if: always()
         with:
           name: E2ET_script-jdk11-log
           path: benerator.log
@@ -576,6 +597,7 @@ jobs:
       - run: benerator $BENERATOR_HOME/demo/memstore/memstore.ben.xml
       - name: Upload logfile
         uses: actions/upload-artifact@v3
+        if: always()
         with:
           name: E2ET_memstore-jdk11-log
           path: benerator.log
@@ -611,6 +633,7 @@ jobs:
       - run: benerator $BENERATOR_HOME/demo/watermark/watermark.ben.xml
       - name: Upload logfile
         uses: actions/upload-artifact@v3
+        if: always()
         with:
           name: E2ET_watermark-jdk11-log
           path: benerator.log
@@ -646,6 +669,7 @@ jobs:
       - run: benerator $BENERATOR_HOME/demo/anon/anon.ben.xml
       - name: Upload logfile
         uses: actions/upload-artifact@v3
+        if: always()
         with:
           name: E2ET_anon-jdk11-log
           path: benerator.log
@@ -686,6 +710,7 @@ jobs:
       - run: benerator $BENERATOR_HOME/demo/db/dbenvconf.ben.xml
       - name: Upload logfile
         uses: actions/upload-artifact@v3
+        if: always()
         with:
           name: E2ET_db-jdk11-log
           path: benerator.log
@@ -730,6 +755,7 @@ jobs:
       - run: benerator $BENERATOR_HOME/demo/file/postprocess-import.ben.xml
       - name: Upload logfile
         uses: actions/upload-artifact@v3
+        if: always()
         with:
           name: E2ET_files-jdk11-log
           path: benerator.log
@@ -765,6 +791,7 @@ jobs:
       - run: benerator $BENERATOR_HOME/demo/shop/shop-hsqlmem.ben.xml
       - name: Upload logfile
         uses: actions/upload-artifact@v3
+        if: always()
         with:
           name: E2ET_hsqlmem-jdk11-log
           path: benerator.log
@@ -845,6 +872,7 @@ jobs:
       - run: benerator $BENERATOR_HOME/demo/db/postgres-composite.ben.xml
       - name: Upload logfile
         uses: actions/upload-artifact@v3
+        if: always()
         with:
           name: E2ET_postgresql-jdk11-log
           path: benerator.log
@@ -862,9 +890,6 @@ jobs:
         image: mysql
         # Provide the password for postgres
         env:
-          DB_HOST: "mysql"
-          DB_PORT: "3306"
-          DB_CONNECTION: "mysql"
           # mysql
           MYSQL_ROOT_USER: "root"
           MYSQL_ROOT_PASSWORD: "Benerator123!"
@@ -901,10 +926,11 @@ jobs:
           idStrategy=increment
           idParam=1010" > $ARTIFACT_FULLNAME/demo/shop/mysql/shop.mysql.properties
       - run: cat $ARTIFACT_FULLNAME/demo/shop/mysql/shop.mysql.properties
-      - run: sleep 60s
+      - run: sleep 80s
       - run: benerator $BENERATOR_HOME/demo/shop/shop-mysql.ben.xml
       - name: Upload logfile
         uses: actions/upload-artifact@v3
+        if: always()
         with:
           name: E2ET_mysql-jdk11-log
           path: benerator.log
@@ -1143,3 +1169,19 @@ jobs:
           asset_path: target/${{ env.ARTIFACT_FULLNAME }}-dist.tar.gz
           asset_name: ${{ env.ARTIFACT_FULLNAME }}-dist.tar.gz
           asset_content_type: application/zip
+
+  ###################### Trigger EE Pipeline ######################
+
+  trigger_ee_pipelines:
+    runs-on: ubuntu-latest
+    needs:
+      - publish_jdk11
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: trigger EE pipelines
+        if: startsWith(github.ref, 'refs/heads/development')
+        run: curl -X POST --fail -F token=$EE_TOKEN -F ref=development https://gitlab.dwellerlab.com/api/v4/projects/112/trigger/pipeline;
+        env:
+          EE_TOKEN: ${{ secrets.EE_TOKEN }}
